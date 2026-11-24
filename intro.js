@@ -17,6 +17,7 @@ const SLIDES = [
   { shape: 'BSEd', kicker: 'Program', line: 'Bachelor of Secondary <em>Education</em>', sub: 'Learning the craft of teaching young minds.' },
   { shape: 'English', italic: true, kicker: 'Major', line: 'Major in <em>English</em>', sub: 'Grammar, literature, and the power of words.' },
   { shape: 'heart', long: true, kicker: 'Teacher promise', line: 'HINDI NANANAKAL NG ESTUDYANTE <em>KAPAG NASA MOOD</em>', sub: 'Strict when needed, kind always. 😉' },
+  { shape: 'Okay?', italic: true, kicker: 'Just a friendly reminder', line: 'SO BE KIND, STUDENTS. <em>OKAY?</em>', sub: '— Future Ma’am Aila 😄' },
   { shape: 'book', kicker: 'The dream', line: 'Future English <em>Teacher</em>', sub: 'This is her journey to achieve it.' },
 ];
 
