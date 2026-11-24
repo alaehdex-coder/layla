@@ -5,15 +5,25 @@ import * as THREE from 'three';
    Drop images into /photos and they are used everywhere
    (listed by photos.php). Otherwise placeholders are shown.
    ========================================================= */
+// The journey, in order. Name your photos 01.jpg, 02.jpg … in this same order
+// and each one gets the matching title and caption below.
+// Photos 01–08 are her real story so far; 09–12 are the goals still ahead
+// (use inspiring or symbolic pictures for those until she gets there).
 const TITLES = [
-  ['Salt & Glass', 'portrait'], ['Concrete Choir', 'architecture'], ['Night Ferry', 'editorial'],
-  ['Low Tide', 'landscape'], ['Mira, Lit', 'portrait'], ['Brutal Bloom', 'architecture'],
-  ['Velvet Hour', 'editorial'], ['North Ridge', 'landscape'], ['Second Skin', 'portrait'],
-  ['Atrium', 'architecture'], ['Monsoon Edit', 'editorial'], ['Dune Study', 'landscape'],
-  ['Halo', 'portrait'], ['Stairwell 9', 'architecture'],
+  ['First Pages', 'roots', 'Where it started: a little girl and a stack of storybooks.'],
+  ['Reading Aloud', 'roots', 'Always the one who volunteered to read in class.'],
+  ['Choosing English', 'roots', 'Senior high, the year I knew English was my path.'],
+  ['Freshman Year', 'college', 'Day one of BSEd, Major in English.'],
+  ['Late-Night Readings', 'college', 'Novels, grammar and too much coffee.'],
+  ['Literature Class', 'college', 'Learning to read a text, and someday to teach it.'],
+  ['In Front of the Class', 'college', 'Reports and presentations: my first taste of teaching.'],
+  ['Second Year, Today', 'college', 'Where I am now: still studying, still dreaming.'],
+  ['Practice Teaching', 'goal', 'Next: learning the craft beside a cooperating teacher.'],
+  ['Graduation Day', 'goal', 'Bachelor of Secondary Education, Major in English.'],
+  ['Passing the LET', 'goal', 'The Licensure Examination for Teachers, and my name on the list.'],
+  ['My Own Classroom', 'goal', 'The dream: my own room, my own learners.'],
 ];
-const EXIF = ['85mm · f/1.4 · 1/500 · ISO 100', '35mm · f/2.8 · 1/250 · ISO 200', '24mm · f/8 · 1/125 · ISO 64', '50mm · f/1.8 · 1/1000 · ISO 160', '135mm · f/4 · 1/60 · ISO 400'];
-const YEARS = [2026, 2025, 2025, 2024, 2023, 2022];
+const CAT_LABEL = { roots: 'Roots', college: 'College', goal: 'Goal ahead' };
 
 // photos.php works under XAMPP; photos.json is the static copy used on Vercel.
 async function loadList(url) {
@@ -31,11 +41,10 @@ const count = hasLocal ? LOCAL.length : TITLES.length;
 
 // One entry per unique image. src(w, h) returns a sized URL (local files ignore the size).
 const UNIQUE = Array.from({ length: count }, (_, i) => {
-  const [title, cat] = TITLES[i % TITLES.length];
-  const seed = `lumen-${i + 3}`;
+  const [title, cat, note] = TITLES[i % TITLES.length];
+  const seed = `aila-journey-${i + 1}`;
   return {
-    title, cat,
-    exif: EXIF[i % EXIF.length],
+    title, cat, note,
     src: (w, h) => (hasLocal ? LOCAL[i] : `https://picsum.photos/seed/${seed}/${w}/${h}`),
   };
 });
@@ -58,7 +67,7 @@ function showLb() {
   const p = lbList[lbIndex];
   lbImg.src = p.src(1400, 1750);
   lbImg.alt = p.title;
-  lbCap.innerHTML = `<span>${p.title} — ${p.cat}</span><span>${p.exif}</span><span>${String(lbIndex + 1).padStart(2, '0')} / ${String(lbList.length).padStart(2, '0')}</span>`;
+  lbCap.innerHTML = `<span>${p.title} — ${CAT_LABEL[p.cat]}</span><span>${p.note}</span><span>${String(lbIndex + 1).padStart(2, '0')} / ${String(lbList.length).padStart(2, '0')}</span>`;
 }
 function openLightbox(photo, list = UNIQUE) {
   lbList = list;
@@ -296,15 +305,14 @@ resize();
 let heroVisible = true;
 new IntersectionObserver(([en]) => { heroVisible = en.isIntersecting; }).observe(hero);
 
-const hudFov = document.getElementById('hudFov');
-const hudEl = document.getElementById('hudEl');
-const hudRoll = document.getElementById('hudRoll');
 const tmpGoalPos = new THREE.Vector3(), tmpGoalTarget = new THREE.Vector3();
 
 function renderStage(dt, t) {
   if (!drag && layout !== 'wall' && !reduceMotion) rotTarget += dt * 0.07;
   rot = lerp(rot, rotTarget, damp(5, dt));
   world.rotation.y = rot;
+  // On tall (phone) screens lift the ring so it sits above the name, not behind it.
+  world.position.y = lerp(world.position.y, camera.aspect < 0.8 && camName !== 'inside' ? 2.4 : 0, damp(3, dt));
 
   const back = camera.aspect < 0.8 && camName !== 'inside' ? 1.45 : 1;
   tmpGoalPos.fromArray(camGoal.pos).multiplyScalar(back);
@@ -351,17 +359,14 @@ function renderStage(dt, t) {
     m.scale.setScalar(1 + d.hover * 0.05);
   }
 
-  const off = camera.position.clone().sub(camState.target);
-  hudFov.textContent = Math.round(camera.fov);
-  hudEl.textContent = Math.round(THREE.MathUtils.radToDeg(Math.atan2(off.y, Math.hypot(off.x, off.z))));
-  hudRoll.textContent = Math.round(THREE.MathUtils.radToDeg(camState.roll));
   renderer.render(scene, camera);
 }
 
 /* =========================================================
    ABOUT portrait
    ========================================================= */
-document.getElementById('aboutImg').src = hasLocal ? UNIQUE[0].src() : 'https://picsum.photos/seed/jm-portrait/900/1125';
+// The "Second Year, Today" photo (08) doubles as her portrait.
+document.getElementById('aboutImg').src = hasLocal ? UNIQUE[7 % UNIQUE.length].src() :'https://picsum.photos/seed/aila-portrait/900/1125';
 
 /* =========================================================
    SELECTED PROJECTS — list with cursor-follow preview
@@ -369,7 +374,9 @@ document.getElementById('aboutImg').src = hasLocal ? UNIQUE[0].src() : 'https://
 const projectsEl = document.getElementById('projects');
 const preview = document.getElementById('preview');
 const previewImg = document.getElementById('previewImg');
-const PROJECTS = Array.from({ length: 6 }, (_, i) => UNIQUE[(i * 2) % UNIQUE.length]);
+// Six chapters of the journey: [photo index, what that stage was about]
+const CHAPTERS = [[0, 'Childhood'], [3, 'Year 1'], [7, 'Year 2 · Now'], [8, 'Year 4'], [10, 'Board exam'], [11, 'The goal']];
+const PROJECTS = CHAPTERS.map(([idx]) => UNIQUE[idx % UNIQUE.length]);
 PROJECTS.forEach((p, i) => {
   const li = document.createElement('li');
   li.className = 'project reveal';
@@ -379,8 +386,8 @@ PROJECTS.forEach((p, i) => {
   li.innerHTML = `
     <span class="p-num mono">${String(i + 1).padStart(2, '0')}</span>
     <span class="p-title">${words.length ? words.join(' ') + ' ' : ''}<em>${last}</em></span>
-    <span class="p-cat mono">${p.cat}</span>
-    <span class="p-year mono">${YEARS[i]}</span>
+    <span class="p-cat mono">${CAT_LABEL[p.cat]}</span>
+    <span class="p-year mono">${CHAPTERS[i][1]}</span>
     <span class="p-arrow">↗</span>
     <span class="thumb"><img loading="lazy" src="${p.src(900, 560)}" alt="${p.title}" /></span>`;
   li.addEventListener('pointerenter', () => { previewImg.src = p.src(600, 750); preview.classList.add('show'); });
@@ -401,7 +408,7 @@ UNIQUE.forEach((p, i) => {
   el.dataset.cat = p.cat;
   el.dataset.cursor = 'View';
   el.innerHTML = `<img loading="lazy" src="${p.src(700, HEIGHTS[i % HEIGHTS.length])}" alt="${p.title}" />
-    <figcaption class="shot-meta mono"><b>${p.title}</b><span>${p.cat}</span></figcaption>`;
+    <figcaption class="shot-meta mono"><b>${p.title}</b><span>${CAT_LABEL[p.cat]}</span></figcaption>`;
   el.addEventListener('click', () => {
     const visible = UNIQUE.filter((x) => !masonry.children[UNIQUE.indexOf(x)].classList.contains('hide'));
     openLightbox(p, visible);
@@ -418,13 +425,14 @@ document.getElementById('filters').addEventListener('click', (e) => {
 /* =========================================================
    ANGLES — scroll-driven CSS 3D orbit
    ========================================================= */
+// The climb: six steps, each with its own photo from the journey.
 const ANGLES = [
-  { rx: 0, ry: 0, rz: 0, label: 'Frontal' },
-  { rx: -6, ry: 35, rz: 0, label: 'Three-quarter' },
-  { rx: -4, ry: 62, rz: 0, label: 'Profile' },
-  { rx: -32, ry: 14, rz: 0, label: 'High angle' },
-  { rx: 24, ry: -22, rz: 0, label: 'Low angle' },
-  { rx: 0, ry: -10, rz: 18, label: 'Dutch' },
+  { rx: 0, ry: 0, rz: 0, label: 'The dream', img: 1 },
+  { rx: -6, ry: 35, rz: 0, label: 'The books', img: 4 },
+  { rx: -4, ry: 62, rz: 0, label: 'Today', img: 7 },
+  { rx: -32, ry: 14, rz: 0, label: 'Practice teaching', img: 8 },
+  { rx: 24, ry: -22, rz: 0, label: 'Graduation', img: 9 },
+  { rx: 0, ry: -10, rz: 18, label: 'The classroom', img: 11 },
 ];
 const stack = document.getElementById('stack');
 const floor = document.createElement('div');
@@ -433,11 +441,11 @@ stack.appendChild(floor);
 const slabs = ANGLES.map((a, i) => {
   const s = document.createElement('div');
   s.className = 'slab';
-  s.innerHTML = `<img src="${UNIQUE[(i + 6) % UNIQUE.length].src(600, 800)}" alt="${a.label} angle" loading="lazy" /><span class="tag mono">0${i + 1} · ${a.label}</span>`;
+  s.innerHTML = `<img src="${UNIQUE[a.img % UNIQUE.length].src(600, 800)}" alt="${a.label}" loading="lazy" /><span class="tag mono">0${i + 1} · ${a.label}</span>`;
   stack.appendChild(s);
   return s;
 });
-const anglesSec = document.getElementById('angles');
+const anglesSec = document.getElementById('climb');
 const listItems = [...document.querySelectorAll('#angleList li')];
 const angleDeg = document.getElementById('angleDeg');
 const meterFill = document.getElementById('meterFill');
@@ -461,7 +469,7 @@ function updateAngles() {
   });
   const active = Math.round(f);
   listItems.forEach((li, i) => li.classList.toggle('active', i === active));
-  angleDeg.textContent = `${Math.round(ry)}°`;
+  angleDeg.textContent = `Step ${active + 1}`;
   meterFill.style.width = `${p * 100}%`;
 }
 
@@ -481,9 +489,25 @@ onScroll();
 let lenis = null;
 if (finePointer && !reduceMotion) {
   import('https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.mjs')
-    .then(({ default: Lenis }) => { lenis = new Lenis({ lerp: 0.1 }); })
+    .then(({ default: Lenis }) => {
+      lenis = new Lenis({ lerp: 0.1 });
+      if (document.documentElement.classList.contains('intro-on')) lenis.stop();
+    })
     .catch(() => { /* fall back to native scroll */ });
 }
+addEventListener('intro:done', () => { scrollTo(0, 0); lenis?.start(); });
+
+// Mobile menu
+const menuBtn = document.getElementById('menuBtn');
+const setMenu = (open) => {
+  nav.classList.toggle('open', open);
+  menuBtn.setAttribute('aria-expanded', String(open));
+  menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+};
+menuBtn.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+document.querySelectorAll('#navLinks a').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+
 document.querySelectorAll('a[href^="#"]').forEach((a) => {
   a.addEventListener('click', (e) => {
     const id = a.getAttribute('href');
@@ -510,7 +534,7 @@ document.querySelectorAll('.reveal').forEach((el) => {
 
 document.getElementById('contactForm').addEventListener('submit', (e) => {
   e.preventDefault();
-  document.getElementById('formNote').textContent = "Thank you — I'll reply within 24 hours.";
+  document.getElementById('formNote').textContent = "Thank you! I'll get back to you soon.";
   e.target.reset();
 });
 
@@ -535,6 +559,7 @@ function tick(now) {
   preview.style.top = `${pv.y}px`;
   preview.style.rotate = `${pv.r}deg`;
 
-  if (heroVisible) renderStage(dt, clock.elapsedTime);
+  // While the intro plays, skip the hero render so the intro gets the GPU.
+  if (heroVisible && !document.documentElement.classList.contains('intro-on')) renderStage(dt, clock.elapsedTime);
 }
 requestAnimationFrame(tick);
