@@ -17,7 +17,7 @@ const TITLES = [
   ['Late-Night Readings', 'college', 'Novels, grammar and too much coffee.'],
   ['Literature Class', 'college', 'Learning to read a text, and someday to teach it.'],
   ['In Front of the Class', 'college', 'Reports and presentations: my first taste of teaching.'],
-  ['Second Year, Today', 'college', 'Where I am now: still studying, still dreaming.'],
+  ['Third Year, Today', 'college', 'Where I am now: one year from practice teaching, still dreaming.'],
   ['Practice Teaching', 'goal', 'Next: learning the craft beside a cooperating teacher.'],
   ['Graduation Day', 'goal', 'Bachelor of Secondary Education, Major in English.'],
   ['Passing the LET', 'goal', 'The Licensure Examination for Teachers, and my name on the list.'],
@@ -365,7 +365,7 @@ function renderStage(dt, t) {
 /* =========================================================
    ABOUT portrait
    ========================================================= */
-// The "Second Year, Today" photo (08) doubles as her portrait.
+// The "Third Year, Today" photo (08) doubles as her portrait.
 document.getElementById('aboutImg').src = hasLocal ? UNIQUE[7 % UNIQUE.length].src() :'https://picsum.photos/seed/aila-portrait/900/1125';
 
 /* =========================================================
@@ -375,7 +375,7 @@ const projectsEl = document.getElementById('projects');
 const preview = document.getElementById('preview');
 const previewImg = document.getElementById('previewImg');
 // Six chapters of the journey: [photo index, what that stage was about]
-const CHAPTERS = [[0, 'Childhood'], [3, 'Year 1'], [7, 'Year 2 · Now'], [8, 'Year 4'], [10, 'Board exam'], [11, 'The goal']];
+const CHAPTERS = [[0, 'Childhood'], [3, 'Year 1'], [7, 'Year 3 · Now'], [8, 'Year 4'], [10, 'Board exam'], [11, 'The goal']];
 const PROJECTS = CHAPTERS.map(([idx]) => UNIQUE[idx % UNIQUE.length]);
 PROJECTS.forEach((p, i) => {
   const li = document.createElement('li');

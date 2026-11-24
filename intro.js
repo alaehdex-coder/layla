@@ -13,7 +13,7 @@ const intro = document.getElementById('intro');
 // a word (use \n for two lines) or 'book'.
 const SLIDES = [
   { shape: 'Aila\nMahinay', italic: true, kicker: 'Introducing', line: 'Aila <em>Mahinay</em>', sub: 'A story still being written, one page at a time.' },
-  { shape: '2nd', kicker: 'Year level', line: 'Second-year <em>college</em> student', sub: 'Halfway up the climb, and still climbing.' },
+  { shape: '3rd', kicker: 'Year level', line: 'Third-year <em>college</em> student', sub: 'More than halfway up the climb, and still climbing.' },
   { shape: 'BSEd', kicker: 'Program', line: 'Bachelor of Secondary <em>Education</em>', sub: 'Learning the craft of teaching young minds.' },
   { shape: 'English', italic: true, kicker: 'Major', line: 'Major in <em>English</em>', sub: 'Grammar, literature, and the power of words.' },
   { shape: 'heart', long: true, kicker: 'Teacher promise', line: 'HINDI NANANAKAL NG ESTUDYANTE <em>KAPAG NASA MOOD</em>', sub: 'Strict when needed, kind always. 😉' },
