@@ -441,36 +441,63 @@ stack.appendChild(floor);
 const slabs = ANGLES.map((a, i) => {
   const s = document.createElement('div');
   s.className = 'slab';
-  s.innerHTML = `<img src="${UNIQUE[a.img % UNIQUE.length].src(600, 800)}" alt="${a.label}" loading="lazy" /><span class="tag mono">0${i + 1} · ${a.label}</span>`;
+  // eager + async decode so photos are ready before they rotate into view
+  s.innerHTML = `<img src="${UNIQUE[a.img % UNIQUE.length].src(600, 800)}" alt="${a.label}" decoding="async" /><i class="shade"></i><span class="tag mono">0${i + 1} · ${a.label}</span>`;
   stack.appendChild(s);
-  return s;
+  return { el: s, shade: s.querySelector('.shade') };
 });
 const anglesSec = document.getElementById('climb');
+const anglesSticky = anglesSec.querySelector('.angles-sticky');
 const listItems = [...document.querySelectorAll('#angleList li')];
 const angleDeg = document.getElementById('angleDeg');
 const meterFill = document.getElementById('meterFill');
 const smooth = (x) => x * x * (3 - 2 * x);
 
-function updateAngles() {
+// Scroll only records where we want to be; the main loop eases toward it
+// every frame, so the 3D stack glides instead of jumping between scroll events.
+const climb = { target: 0, current: 0, drawn: -1, active: -1, visible: false };
+// Use the sticky panel's height (100svh, stable) rather than innerHeight,
+// which changes as the mobile address bar shows/hides and made progress jump.
+let stickyH = anglesSticky.offsetHeight;
+// Narrow screens get gentler angles so the stack never swings off-screen.
+let climbScale = innerWidth < 700 ? 0.5 : 1;
+function readClimb() {
   const r = anglesSec.getBoundingClientRect();
-  if (r.bottom < 0 || r.top > innerHeight) return;
-  const p = THREE.MathUtils.clamp(-r.top / (r.height - innerHeight), 0, 1);
+  climb.visible = r.bottom > -200 && r.top < innerHeight + 200;
+  if (!climb.visible) return;
+  const span = Math.max(1, r.height - stickyH);
+  climb.target = THREE.MathUtils.clamp(-r.top / span, 0, 1);
+}
+
+function drawClimb(p) {
   const f = p * (ANGLES.length - 1);
   const i0 = Math.floor(f), i1 = Math.min(i0 + 1, ANGLES.length - 1), tt = smooth(f - i0);
   const A = ANGLES[i0], B = ANGLES[i1];
-  const rx = lerp(A.rx, B.rx, tt), ry = lerp(A.ry, B.ry, tt), rz = lerp(A.rz, B.rz, tt);
-  stack.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
-  slabs.forEach((s, i) => {
+  const k = climbScale;
+  const rx = lerp(A.rx, B.rx, tt) * k, ry = lerp(A.ry, B.ry, tt) * k, rz = lerp(A.rz, B.rz, tt) * k;
+  stack.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg)`;
+  slabs.forEach(({ el, shade }, i) => {
     const d = i - f;
     const z = d >= 0 ? -d * 90 : -d * 260;
-    s.style.transform = `translate3d(${d * 22}px, ${d * -10}px, ${z}px)`;
-    s.style.opacity = d >= 0 ? Math.max(0, 1 - d * 0.18) : Math.max(0, 1 + d * 1.8);
-    s.style.filter = `brightness(${d > 0.3 ? 0.5 : 1})`;
+    el.style.transform = `translate3d(${(d * 22 * k).toFixed(1)}px, ${(d * -10 * k).toFixed(1)}px, ${z.toFixed(1)}px)`;
+    el.style.opacity = (d >= 0 ? Math.max(0, 1 - d * 0.18) : Math.max(0, 1 + d * 1.8)).toFixed(3);
+    // dim cards behind the current one with an overlay (cheap) instead of filter (repaints)
+    shade.style.opacity = THREE.MathUtils.clamp((d - 0.15) * 1.4, 0, 0.55).toFixed(3);
   });
+  meterFill.style.transform = `scaleX(${p.toFixed(4)})`;
   const active = Math.round(f);
-  listItems.forEach((li, i) => li.classList.toggle('active', i === active));
-  angleDeg.textContent = `Step ${active + 1}`;
-  meterFill.style.width = `${p * 100}%`;
+  if (active !== climb.active) {
+    climb.active = active;
+    listItems.forEach((li, i) => li.classList.toggle('active', i === active));
+    angleDeg.textContent = `Step ${active + 1}`;
+  }
+}
+
+function tickClimb(dt) {
+  if (!climb.visible) return;
+  climb.current = reduceMotion ? climb.target : lerp(climb.current, climb.target, damp(7, dt));
+  if (Math.abs(climb.current - climb.target) < 0.0002) climb.current = climb.target;
+  if (Math.abs(climb.current - climb.drawn) > 0.00005) { climb.drawn = climb.current; drawClimb(climb.current); }
 }
 
 /* =========================================================
@@ -479,11 +506,13 @@ function updateAngles() {
 const nav = document.querySelector('.nav');
 const onScroll = () => {
   nav.classList.toggle('scrolled', scrollY > 40);
-  updateAngles();
+  readClimb();
 };
 addEventListener('scroll', onScroll, { passive: true });
-addEventListener('resize', updateAngles);
+addEventListener('resize', () => { stickyH = anglesSticky.offsetHeight; climbScale = innerWidth < 700 ? 0.5 : 1; climb.drawn = -1; readClimb(); });
 onScroll();
+climb.current = climb.target;
+drawClimb(climb.current);
 
 // Lenis smooth scrolling on desktop (optional — page works without it)
 let lenis = null;
@@ -559,6 +588,7 @@ function tick(now) {
   preview.style.top = `${pv.y}px`;
   preview.style.rotate = `${pv.r}deg`;
 
+  tickClimb(dt);
   // While the intro plays, skip the hero render so the intro gets the GPU.
   if (heroVisible && !document.documentElement.classList.contains('intro-on')) renderStage(dt, clock.elapsedTime);
 }
